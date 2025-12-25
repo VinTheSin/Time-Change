@@ -34,7 +34,7 @@ namespace Time_Change
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.GameLoop.DayEnding += OnDayEnding;
 
-            helper.ConsoleCommands.Add("debug_kill", "[Build v4] Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
+            helper.ConsoleCommands.Add("debug_kill", "[Build v5] Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
         }
 
         private void OnDebugKill(string command, string[] args)

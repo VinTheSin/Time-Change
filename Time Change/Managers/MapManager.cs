@@ -45,7 +45,36 @@ namespace Time_Change.Managers
                 this.Monitor.Log($"Added custom location: {CemeteryLocationName}", LogLevel.Info);
             }
             
-            // Note: We removed the physical warp in favor of an interaction event.
+            var seedShop = Game1.getLocationFromName("SeedShop");
+            if (seedShop != null)
+            {
+                // Yoba Shrine area. Moving to 36, 18 to be accessible (in front of altar).
+                int warpX = 36;
+                int warpY = 18;
+                
+                // Add warp from SeedShop -> Cemetery
+                seedShop.warps.Add(new Warp(warpX, warpY, CemeteryLocationName, 10, 18, false));
+                
+                // Add warp from Cemetery -> SeedShop
+                var cemetery = Game1.getLocationFromName(CemeteryLocationName);
+                if (cemetery != null)
+                {
+                    cemetery.warps.Add(new Warp(10, 19, "SeedShop", warpX, warpY + 1, false));
+                }
+
+                // Make it visible: Place a "Sign of the Vessel" (Gold Statue)
+                var markerPos = new Microsoft.Xna.Framework.Vector2(warpX, warpY);
+                
+                // FORCE replace any existing object there (in case of old invisible ones)
+                if (seedShop.objects.ContainsKey(markerPos))
+                {
+                    seedShop.objects.Remove(markerPos);
+                }
+
+                var marker = new StardewValley.Object(markerPos, "37", false);
+                seedShop.objects.Add(markerPos, marker);
+                this.Monitor.Log($"Placed Golden Marker at {warpX},{warpY} in SeedShop.", LogLevel.Info);
+            }
         }
 
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
@@ -59,10 +88,9 @@ namespace Time_Change.Managers
             // Get the tile the player is interacting with
             Vector2 grabbedTile = e.Cursor.GrabTile;
             
-            // Check if it matches Yoba Shrine coordinates
-            // The Shrine is roughly at 35,17 and 36,17
-            // We'll check a small box area to be safe
-            bool isShrine = (grabbedTile.X >= 35 && grabbedTile.X <= 37) && (grabbedTile.Y >= 16 && grabbedTile.Y <= 17);
+            // Check if it matches Yoba Shrine coordinates (New coord 36, 18)
+            // Allow clicking the marker itself or adjacent
+            bool isShrine = (Math.Abs(grabbedTile.X - 36) <= 1) && (Math.Abs(grabbedTile.Y - 18) <= 1);
 
             if (isShrine)
             {
