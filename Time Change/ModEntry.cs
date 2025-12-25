@@ -81,10 +81,8 @@ namespace Time_Change
             this.Data.CurrentYear = Game1.year;
             
             // Iterate over all characters in the game to initialize them
-            // Using Utility.getAllCharacters() might be too broad (includes monsters etc in some versions), 
-            // but checking Game1.content for NPC dispositions is safer for "townies".
-            
-            var npcDispositions = Game1.content.Load<System.Collections.Generic.Dictionary<string, string>>("Data/NPCDispositions");
+            // Use Helper.GameContent to load data assets safely
+            var npcDispositions = this.Helper.GameContent.Load<System.Collections.Generic.Dictionary<string, string>>("Data/NPCDispositions");
             
             foreach (var npcName in npcDispositions.Keys)
             {
