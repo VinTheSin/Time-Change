@@ -16,6 +16,7 @@ namespace Time_Change
         private Managers.LifecycleManager? Lifecycle;
         private Managers.AssetManager? Assets;
         private Managers.FuneralManager? Funerals;
+        private Managers.MapManager? Maps;
 
         public override void Entry(IModHelper helper)
         {
@@ -26,6 +27,7 @@ namespace Time_Change
             this.Lifecycle = new Managers.LifecycleManager(this.Monitor, this.Config);
             this.Assets = new Managers.AssetManager(this.Helper, this.Monitor);
             this.Funerals = new Managers.FuneralManager(this.Helper, this.Monitor);
+            this.Maps = new Managers.MapManager(this.Helper, this.Monitor);
 
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
             helper.Events.GameLoop.Saving += OnSaving;
