@@ -48,30 +48,38 @@ namespace Time_Change.Managers
                 this.Monitor.Log($"Added custom location: {CemeteryLocationName}", LogLevel.Info);
             }
 
-            // Add a warp to the Town map so players can access it
-            // Assuming coordinates near the existing graveyard in Town (approx 40, 70 is near the river/bridge to beach, 
-            // but let's put it north of the blacksmith or similar).
-            // Let's place it near the Yoba shrine/Pierre's for now or just generic.
-            // Town 70 10 is near the top right. 
-            // We'll add a warp at Town 95 15 (East side, path to Joja?). 
-            // Better: Behind the graveyard. Town 18 10 is near top left graveyard.
+            // Add a warp to the SeedShop (Pierre's), specifically the Yoba Shrine area.
+            // This is requested to be "in Pierres shop at the church".
             
-            var town = Game1.getLocationFromName("Town");
-            if (town != null)
+            var seedShop = Game1.getLocationFromName("SeedShop");
+            if (seedShop != null)
             {
-                // X: 18, Y: 10 is roughly top left near the existing graves.
-                // We add a tile property or just a warp.
-                // Note: Adding a warp via code is safer than editing the map asset for compatibility.
+                // Yoba Shrine is on the far right. Altar is roughly at 36, 17.
+                // We'll place the warp behind/at the altar.
+                int warpX = 36;
+                int warpY = 16;
                 
-                // Add warp from Town -> Cemetery
-                // 18, 10 in Town -> 10, 18 in Cemetery
-                town.warps.Add(new Warp(18, 10, CemeteryLocationName, 10, 18, false));
+                // Add warp from SeedShop -> Cemetery
+                seedShop.warps.Add(new Warp(warpX, warpY, CemeteryLocationName, 10, 18, false));
                 
-                // Add warp from Cemetery -> Town
+                // Add warp from Cemetery -> SeedShop
                 var cemetery = Game1.getLocationFromName(CemeteryLocationName);
                 if (cemetery != null)
                 {
-                    cemetery.warps.Add(new Warp(10, 19, "Town", 18, 11, false));
+                    cemetery.warps.Add(new Warp(10, 19, "SeedShop", warpX, warpY + 1, false));
+                }
+
+                // Make it visible: Place a "Sign of the Vessel" (Gold Statue) or similar marker
+                // Object ID 37 is the gold statue thing (Sign of the Vessel) which looks mystical.
+                var markerPos = new Microsoft.Xna.Framework.Vector2(warpX, warpY);
+                if (!seedShop.objects.ContainsKey(markerPos))
+                {
+                    // Using "37" (Sign of the Vessel) as a placeholder marker
+                    // In 1.6, use ItemRegistry.Create or the correct constructor with string ID
+                    // Simple constructor: new Object(Vector2, string itemId, ...)
+                    var marker = new StardewValley.Object(markerPos, "37", false);
+                    seedShop.objects.Add(markerPos, marker);
+                    this.Monitor.Log("Placed marker for Cemetery entrance in SeedShop.", LogLevel.Info);
                 }
             }
         }

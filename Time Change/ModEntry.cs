@@ -33,17 +33,41 @@ namespace Time_Change
             helper.Events.GameLoop.Saving += OnSaving;
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.GameLoop.DayEnding += OnDayEnding;
+
+            helper.ConsoleCommands.Add("debug_kill", "Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
+        }
+
+        private void OnDebugKill(string command, string[] args)
+        {
+            if (args.Length == 0)
+            {
+                this.Monitor.Log("Usage: debug_kill <name>", LogLevel.Error);
+                return;
+            }
+
+            string name = args[0];
+            if (this.Data.NpcStates.TryGetValue(name, out var npc))
+            {
+                npc.Alive = false;
+                npc.LifeStage = LifeStage.Deceased;
+                this.Monitor.Log($"Killed {name}. They should have a funeral pending now.", LogLevel.Alert);
+                
+                if (!this.Data.PendingFunerals.Contains(name))
+                {
+                    this.Data.PendingFunerals.Add(name);
+                }
+            }
+            else
+            {
+                this.Monitor.Log($"NPC '{name}' not found in mod data.", LogLevel.Error);
+            }
         }
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
             this.Data = this.Helper.Data.ReadSaveData<ModData>(DataKey) ?? new ModData();
             
-            if (this.Data.NpcStates.Count == 0)
-            {
-                this.Monitor.Log("No existing data found. Initializing default NPC states...", LogLevel.Info);
-                InitializeDefaultData();
-            }
+            this.Monitor.Log("Save loaded. Data will be verified on day start.", LogLevel.Debug);
 
             this.Assets?.SetData(this.Data);
             this.Funerals?.SetData(this.Data);
@@ -56,6 +80,9 @@ namespace Time_Change
 
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
         {
+            // Ensure data is populated for all current NPCs
+            InitializeDefaultData();
+
             // Check for new year
             if (Game1.dayOfMonth == 1 && Game1.currentSeason == "spring")
             {
@@ -80,18 +107,17 @@ namespace Time_Change
         {
             this.Data.CurrentYear = Game1.year;
             
-            // Iterate over all characters in the game to initialize them
-            // Use Helper.GameContent to load data assets safely
-            var npcDispositions = this.Helper.GameContent.Load<System.Collections.Generic.Dictionary<string, string>>("Data/NPCDispositions");
-            
-            foreach (var npcName in npcDispositions.Keys)
+            // Safely iterate over all existing characters in the world
+            // This avoids loading "Data/NPCDispositions" which causes crashes in 1.6
+            foreach (var npc in Utility.getAllCharacters())
             {
-                // Basic default: Everyone starts as Adult (age 20-30 range random?) or fixed.
-                // For now, let's say everyone is 25.
-                this.Data.NpcStates[npcName] = new NPCData(npcName, 25);
+                // Filter out monsters, pets, horses, etc. by checking if they are villagers
+                if (npc.isVillager() && !this.Data.NpcStates.ContainsKey(npc.Name))
+                {
+                    this.Data.NpcStates[npc.Name] = new NPCData(npc.Name, 25);
+                    this.Monitor.Log($"Initialized new NPC: {npc.Name}", LogLevel.Trace);
+                }
             }
-            
-            this.Monitor.Log($"Initialized {this.Data.NpcStates.Count} NPCs.", LogLevel.Info);
         }
     }
 }

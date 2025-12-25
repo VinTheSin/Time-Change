@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <EnableHarmony>true</EnableHarmony>
     <GamePath>C:\Program Files (x86)\Steam\steamapps\common\Stardew Valley</GamePath>
+    <GameModsDir>C:\Program Files (x86)\Steam\steamapps\common\Stardew Valley\Mods (Test)</GameModsDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,7 +21,7 @@
 
   <ItemGroup>
     <Content Include="assets\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
