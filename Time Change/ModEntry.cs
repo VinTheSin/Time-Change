@@ -46,15 +46,24 @@ namespace Time_Change
             }
 
             string name = args[0];
-            if (this.Data.NpcStates.TryGetValue(name, out var npc))
+            if (this.Data.NpcStates.TryGetValue(name, out var npcData))
             {
-                npc.Alive = false;
-                npc.LifeStage = LifeStage.Deceased;
+                npcData.Alive = false;
+                npcData.LifeStage = LifeStage.Deceased;
                 this.Monitor.Log($"Killed {name}. They should have a funeral pending now.", LogLevel.Alert);
                 
                 if (!this.Data.PendingFunerals.Contains(name))
                 {
                     this.Data.PendingFunerals.Add(name);
+                }
+
+                // Hide immediately
+                var npc = Game1.getCharacterFromName(name);
+                if (npc != null)
+                {
+                    if (npc.currentLocation != null) npc.currentLocation.characters.Remove(npc);
+                    npc.IsInvisible = true;
+                    npc.HideShadow = true;
                 }
             }
             else
@@ -82,6 +91,39 @@ namespace Time_Change
         {
             // Ensure data is populated for all current NPCs
             InitializeDefaultData();
+
+            // Hide deceased NPCs
+            foreach (var kvp in this.Data.NpcStates)
+            {
+                if (!kvp.Value.Alive && kvp.Value.LifeStage == Models.LifeStage.Deceased)
+                {
+                    var npc = Game1.getCharacterFromName(kvp.Key);
+                    if (npc != null)
+                    {
+                        // Effectively remove them from the world
+                        if (npc.currentLocation != null)
+                        {
+                            npc.currentLocation.characters.Remove(npc);
+                        }
+                        else
+                        {
+                            // Fallback: Check all locations if current is null/unsynced
+                            foreach (var loc in Game1.locations)
+                            {
+                                if (loc.characters.Contains(npc))
+                                {
+                                    loc.characters.Remove(npc);
+                                    break;
+                                }
+                            }
+                        }
+                        // Also try to hide them if removal fails or they respawn (e.g. valid spawn points)
+                        npc.IsInvisible = true;
+                        npc.HideShadow = true;
+                        this.Monitor.Log($"Removed deceased NPC {npc.Name} from the world.", LogLevel.Trace);
+                    }
+                }
+            }
 
             // Check for new year
             if (Game1.dayOfMonth == 1 && Game1.currentSeason == "spring")
