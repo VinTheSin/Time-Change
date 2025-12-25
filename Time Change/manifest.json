@@ -1,0 +1,10 @@
+{
+  "Name": "Seasons of Time",
+  "Author": "User",
+  "Version": "1.0.0",
+  "Description": "A progressive life simulation mod where time progresses irreversibly, characters age, and death is permanent.",
+  "UniqueID": "User.SeasonsOfTime",
+  "EntryDll": "Time Change.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}
