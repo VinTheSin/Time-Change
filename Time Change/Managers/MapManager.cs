@@ -23,6 +23,7 @@ namespace Time_Change.Managers
 
             helper.Events.Content.AssetRequested += OnAssetRequested;
             helper.Events.GameLoop.DayStarted += OnDayStarted;
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
         }
 
         private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
@@ -39,48 +40,39 @@ namespace Time_Change.Managers
             // Ensure the location exists in the game
             if (Game1.getLocationFromName(CemeteryLocationName) == null)
             {
-                // Stardew 1.6+ uses this constructor often, or simply new GameLocation(path, name)
-                // Actually, if we loaded the map object manually, we should use:
-                // new GameLocation(mapPath, name) where mapPath is the content manager path.
-                
                 var location = new GameLocation($"Maps/{CemeteryLocationName}", CemeteryLocationName);
                 Game1.locations.Add(location);
                 this.Monitor.Log($"Added custom location: {CemeteryLocationName}", LogLevel.Info);
             }
-
-            // Add a warp to the SeedShop (Pierre's), specifically the Yoba Shrine area.
-            // This is requested to be "in Pierres shop at the church".
             
-            var seedShop = Game1.getLocationFromName("SeedShop");
-            if (seedShop != null)
-            {
-                // Yoba Shrine is on the far right. Altar is roughly at 36, 17.
-                // We'll place the warp behind/at the altar.
-                int warpX = 36;
-                int warpY = 16;
-                
-                // Add warp from SeedShop -> Cemetery
-                seedShop.warps.Add(new Warp(warpX, warpY, CemeteryLocationName, 10, 18, false));
-                
-                // Add warp from Cemetery -> SeedShop
-                var cemetery = Game1.getLocationFromName(CemeteryLocationName);
-                if (cemetery != null)
-                {
-                    cemetery.warps.Add(new Warp(10, 19, "SeedShop", warpX, warpY + 1, false));
-                }
+            // Note: We removed the physical warp in favor of an interaction event.
+        }
 
-                // Make it visible: Place a "Sign of the Vessel" (Gold Statue) or similar marker
-                // Object ID 37 is the gold statue thing (Sign of the Vessel) which looks mystical.
-                var markerPos = new Microsoft.Xna.Framework.Vector2(warpX, warpY);
-                if (!seedShop.objects.ContainsKey(markerPos))
-                {
-                    // Using "37" (Sign of the Vessel) as a placeholder marker
-                    // In 1.6, use ItemRegistry.Create or the correct constructor with string ID
-                    // Simple constructor: new Object(Vector2, string itemId, ...)
-                    var marker = new StardewValley.Object(markerPos, "37", false);
-                    seedShop.objects.Add(markerPos, marker);
-                    this.Monitor.Log("Placed marker for Cemetery entrance in SeedShop.", LogLevel.Info);
-                }
+        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
+        {
+            // Only listen for Action (Right-Click/A-Button)
+            if (!e.Button.IsActionButton()) return;
+
+            // Must be in SeedShop
+            if (Game1.currentLocation?.Name != "SeedShop") return;
+
+            // Get the tile the player is interacting with
+            Vector2 grabbedTile = e.Cursor.GrabTile;
+            
+            // Check if it matches Yoba Shrine coordinates
+            // The Shrine is roughly at 35,17 and 36,17
+            // We'll check a small box area to be safe
+            bool isShrine = (grabbedTile.X >= 35 && grabbedTile.X <= 37) && (grabbedTile.Y >= 16 && grabbedTile.Y <= 17);
+
+            if (isShrine)
+            {
+                this.Monitor.Log("Interacted with Yoba Shrine - Warping to Cemetery...", LogLevel.Info);
+                
+                // Warp the player
+                Game1.warpFarmer(CemeteryLocationName, 10, 18, 0);
+                
+                // Suppress default interaction (the message)
+                this.Helper.Input.Suppress(e.Button);
             }
         }
     }
