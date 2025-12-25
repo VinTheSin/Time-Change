@@ -8,11 +8,13 @@ namespace Time_Change.Managers
     public class LifecycleManager
     {
         private readonly IMonitor Monitor;
+        private readonly ModConfig Config;
         private readonly PsychologyManager Psychology;
 
-        public LifecycleManager(IMonitor monitor)
+        public LifecycleManager(IMonitor monitor, ModConfig config)
         {
             this.Monitor = monitor;
+            this.Config = config;
             this.Psychology = new PsychologyManager(monitor);
         }
 
@@ -29,7 +31,7 @@ namespace Time_Change.Managers
 
                 npcData.Age++;
                 UpdateLifeStage(npcData);
-                CheckForDeath(npcData);
+                CheckForDeath(npcData, data);
                 
                 if (npcData.Alive) // Only process psyche if they survived the death check
                 {
@@ -38,11 +40,13 @@ namespace Time_Change.Managers
             }
         }
 
-        private void CheckForDeath(NPCData npc)
+        private void CheckForDeath(NPCData npc, ModData data)
         {
             // Simple probabilistic death model for old age
             double deathChance = 0.0;
-
+            
+            // Adjust death thresholds based on Elder age start? 
+            // For now keeping absolute age checks, but could be relative to AdultMaxAge.
             if (npc.Age >= 100) deathChance = 0.50; // 50% chance each year after 100
             else if (npc.Age >= 90) deathChance = 0.20;
             else if (npc.Age >= 80) deathChance = 0.05;
@@ -53,28 +57,31 @@ namespace Time_Change.Managers
                 Random rnd = new Random();
                 if (rnd.NextDouble() < deathChance)
                 {
-                    KillNPC(npc, "Old Age");
+                    KillNPC(npc, "Old Age", data);
                 }
             }
         }
 
-        private void KillNPC(NPCData npc, string cause)
+        private void KillNPC(NPCData npc, string cause, ModData data)
         {
             npc.Alive = false;
             npc.LifeStage = LifeStage.Deceased;
             this.Monitor.Log($"NPC DEATH: {npc.Id} has died of {cause} at age {npc.Age}.", LogLevel.Alert);
             
-            // Future: Trigger funeral event, update relationships
+            // Queue funeral
+            if (!data.PendingFunerals.Contains(npc.Id))
+            {
+                data.PendingFunerals.Add(npc.Id);
+            }
         }
 
         private void UpdateLifeStage(NPCData npc)
         {
             var oldStage = npc.LifeStage;
             
-            // Simple thresholds for now
-            if (npc.Age < 13) npc.LifeStage = LifeStage.Child;
-            else if (npc.Age < 20) npc.LifeStage = LifeStage.Teen;
-            else if (npc.Age < 65) npc.LifeStage = LifeStage.Adult;
+            if (npc.Age < this.Config.ChildMaxAge) npc.LifeStage = LifeStage.Child;
+            else if (npc.Age < this.Config.TeenMaxAge) npc.LifeStage = LifeStage.Teen;
+            else if (npc.Age < this.Config.AdultMaxAge) npc.LifeStage = LifeStage.Adult;
             else npc.LifeStage = LifeStage.Elder;
 
             if (oldStage != npc.LifeStage)

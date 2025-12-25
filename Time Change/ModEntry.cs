@@ -10,14 +10,22 @@ namespace Time_Change
     public class ModEntry : Mod
     {
         public ModData Data { get; private set; } = new();
+        public ModConfig Config { get; private set; } = new();
+        
         private const string DataKey = "seasons-of-time-data";
         private Managers.LifecycleManager? Lifecycle;
+        private Managers.AssetManager? Assets;
+        private Managers.FuneralManager? Funerals;
 
         public override void Entry(IModHelper helper)
         {
             this.Monitor.Log("Time Change mod loaded. Initializing Seasons of Time...", LogLevel.Info);
+
+            this.Config = this.Helper.ReadConfig<ModConfig>();
             
-            this.Lifecycle = new Managers.LifecycleManager(this.Monitor);
+            this.Lifecycle = new Managers.LifecycleManager(this.Monitor, this.Config);
+            this.Assets = new Managers.AssetManager(this.Helper, this.Monitor);
+            this.Funerals = new Managers.FuneralManager(this.Helper, this.Monitor);
 
             helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
             helper.Events.GameLoop.Saving += OnSaving;
@@ -34,6 +42,9 @@ namespace Time_Change
                 this.Monitor.Log("No existing data found. Initializing default NPC states...", LogLevel.Info);
                 InitializeDefaultData();
             }
+
+            this.Assets?.SetData(this.Data);
+            this.Funerals?.SetData(this.Data);
         }
 
         private void OnSaving(object? sender, SavingEventArgs e)
