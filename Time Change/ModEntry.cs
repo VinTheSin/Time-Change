@@ -111,6 +111,10 @@ namespace Time_Change
                 this.Monitor.Log($"Killed {name}. They should have a funeral pending now.", LogLevel.Alert);
                 Game1.addHUDMessage(new HUDMessage("Someone seems to have passed away...", HUDMessage.newQuest_type));
 
+                // Queue mail immediately for tomorrow
+                string mailKey = $"SeasonsOfTime_Death_{name}";
+                Game1.addMailForTomorrow(mailKey);
+
                 // Hide immediately
                 var npc = Game1.getCharacterFromName(name);
                 if (npc != null)
