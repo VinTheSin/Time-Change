@@ -66,13 +66,13 @@ namespace Time_Change.Managers
         {
             npc.Alive = false;
             npc.LifeStage = LifeStage.Deceased;
+            npc.DeathDateTotal = Game1.Date.TotalDays;
+            npc.CauseOfDeath = cause;
+            
             this.Monitor.Log($"NPC DEATH: {npc.Id} has died of {cause} at age {npc.Age}.", LogLevel.Alert);
             
-            // Queue funeral
-            if (!data.PendingFunerals.Contains(npc.Id))
-            {
-                data.PendingFunerals.Add(npc.Id);
-            }
+            // Notification
+            Game1.addHUDMessage(new HUDMessage("Someone seems to have passed away...", HUDMessage.newQuest_type));
         }
 
         private void UpdateLifeStage(NPCData npc)

@@ -33,214 +33,173 @@ namespace Time_Change.Managers
 
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
         {
-            // Invalidate the event cache so that if there is a new pending funeral (different from yesterday),
-            // the game re-requests the asset and we can generate the new script.
+            // Invalidate caches
             this.Helper.GameContent.InvalidateCache($"Data/Events/{MapManager.CemeteryLocationName}");
             this.Helper.GameContent.InvalidateCache("Data/mail");
 
-            // Ensure mail is sent for all pending funerals
-            if (this.Data != null)
+            if (this.Data == null) return;
+
+            foreach (var kvp in this.Data.NpcStates)
             {
-                foreach (var name in this.Data.PendingFunerals)
+                var npc = kvp.Value;
+                if (!npc.Alive && npc.LifeStage == LifeStage.Deceased && npc.DeathDateTotal >= 0)
                 {
-                    string mailKey = $"SeasonsOfTime_Death_{name}";
-                    // Check if mail already received or in mailbox
-                    if (!Game1.player.mailReceived.Contains(mailKey) && !Game1.player.mailbox.Contains(mailKey))
+                    int daysSinceDeath = Game1.Date.TotalDays - npc.DeathDateTotal;
+
+                    // Day 1: Send Mail from Priest
+                    if (daysSinceDeath >= 1) // Send if missed too?
                     {
-                        Game1.addMailForTomorrow(mailKey);
-                        this.Monitor.Log($"Queued death notification letter for {name}", LogLevel.Info);
+                        string mailKey = $"SeasonsOfTime_Death_{npc.Id}";
+                        // If not received and not in mailbox
+                        if (!Game1.player.mailReceived.Contains(mailKey) && !Game1.player.mailbox.Contains(mailKey))
+                        {
+                            Game1.addMailForTomorrow(mailKey);
+                            this.Monitor.Log($"Queued priest letter for {npc.Id} (Died {daysSinceDeath} days ago)", LogLevel.Info);
+                        }
+                    }
+
+                    // Day 7: Funeral Day
+                    if (daysSinceDeath == 7)
+                    {
+                        this.Monitor.Log($"Today is the funeral for {npc.Id}.", LogLevel.Info);
+                        // We don't need to do anything here except ensure the event asset is ready, 
+                        // which invalidation handled.
                     }
                 }
             }
         }
 
-                private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
+                        private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
 
-                {
+                        {
 
-                    if (this.Data == null) return; // Allow checking without pending funerals to at least load the empty event file
+                            if (this.Data == null) return;
 
-        
+                
 
-                                // Target the Cemetery events
+                            // Target the Cemetery events
 
-        
+                            if (e.Name.IsEquivalentTo($"Data/Events/{MapManager.CemeteryLocationName}"))
 
-                                if (e.Name.IsEquivalentTo($"Data/Events/{MapManager.CemeteryLocationName}"))
+                            {
 
-        
+                                e.LoadFrom(() =>
 
                                 {
 
-        
+                                    var events = new System.Collections.Generic.Dictionary<string, string>();
 
-                                    e.LoadFrom(() =>
+                                    int currentTotalDays = Game1.Date.TotalDays;
 
-        
+                
+
+                                    foreach (var kvp in this.Data.NpcStates)
 
                                     {
 
-        
+                                        var npc = kvp.Value;
 
-                                        var events = new System.Collections.Generic.Dictionary<string, string>();
-
-        
-
-                    
-
-        
-
-                                        if (this.Data.PendingFunerals.Count > 0)
-
-        
+                                        if (!npc.Alive && npc.LifeStage == LifeStage.Deceased && npc.DeathDateTotal >= 0)
 
                                         {
 
-        
+                                            // Only generate event if TODAY is the funeral day (Death + 7)
 
-                                            // Grab the first pending funeral
-
-        
-
-                                            string deceasedName = this.Data.PendingFunerals[0];
-
-        
-
-                                            int eventId = GetFuneralEventId(deceasedName);
-
-        
-
-                    
-
-        
-
-                                            // Don't reinject if already seen (double check, though DayEnding handles removal)
-
-        
-
-                                            if (!Game1.player.eventsSeen.Contains(eventId.ToString()))
-
-        
+                                            if (currentTotalDays == npc.DeathDateTotal + 7)
 
                                             {
 
-        
+                                                int eventId = GetFuneralEventId(npc.Id);
 
-                                                this.Monitor.Log($"Injecting funeral event for {deceasedName} (ID: {eventId})", LogLevel.Info);
+                                                if (!Game1.player.eventsSeen.Contains(eventId.ToString()))
 
-        
+                                                {
 
-                    
+                                                    this.Monitor.Log($"Injecting funeral event for {npc.Id} (Today is funeral day)", LogLevel.Info);
 
-        
+                                                    string script = $"moonlightJellies/10 10/farmer 10 15 0 Lewis 10 12 2/pause 1000/speak Lewis \"We are gathered here today to say goodbye to our friend, {npc.Id}.\"/pause 500/message \"The town stands in silence.\"/pause 1000/end";
 
-                                                // Basic Event Script
+                                                    events[eventId.ToString()] = script;
 
-        
+                                                    // Only support one funeral per day for now to avoid collision
 
-                                                string script = $"moonlightJellies/10 10/farmer 10 15 0 Lewis 10 12 2/pause 1000/speak Lewis \"We are gathered here today to say goodbye to our friend, {deceasedName}.\"/pause 500/message \"The town stands in silence.\"/pause 1000/end";
+                                                    break; 
 
-        
-
-                    
-
-        
-
-                                                events[eventId.ToString()] = script;
-
-        
+                                                }
 
                                             }
 
-        
-
                                         }
 
-        
+                                    }
 
-                                        
+                                    return events;
 
-        
+                                }, AssetLoadPriority.Medium);
 
-                                        return events;
+                            }
 
-        
+                
 
-                                    }, AssetLoadPriority.Medium);
+                            // Inject Mail Data
 
-        
+                            if (e.Name.IsEquivalentTo("Data/mail"))
 
-                                }
+                            {
 
-        
-
-                    
-
-        
-
-                                // Inject Mail Data
-
-        
-
-                                if (e.Name.IsEquivalentTo("Data/mail"))
-
-        
+                                e.Edit(editor =>
 
                                 {
 
-        
+                                    var mail = editor.AsDictionary<string, string>().Data;
 
-                                    e.Edit(editor =>
-
-        
+                                    foreach (var kvp in this.Data.NpcStates)
 
                                     {
 
-        
+                                        var npc = kvp.Value;
 
-                                        var mail = editor.AsDictionary<string, string>().Data;
-
-        
-
-                                        foreach (var name in this.Data.PendingFunerals)
-
-        
+                                        if (!npc.Alive && npc.LifeStage == LifeStage.Deceased && npc.DeathDateTotal >= 0)
 
                                         {
 
-        
-
-                                            string mailKey = $"SeasonsOfTime_Death_{name}";
-
-        
+                                            string mailKey = $"SeasonsOfTime_Death_{npc.Id}";
 
                                             if (!mail.ContainsKey(mailKey))
 
-        
-
                                             {
 
-        
+                                                // Calculate Funeral Date
 
-                                                mail[mailKey] = $"Dear @,^^It is with heavy hearts that we announce the passing of {name}.^^A memorial service will be held at the Cemetery.^Please join us to pay your respects.^^   - Mayor Lewis";
+                                                int funeralTotal = npc.DeathDateTotal + 7;
 
-        
+                                                // Basic calculation
+
+                                                int year = 1 + (funeralTotal / (28 * 4));
+
+                                                int seasonIndex = (funeralTotal % (28 * 4)) / 28;
+
+                                                int day = 1 + (funeralTotal % 28);
+
+                                                string season = Utility.getSeasonNameFromNumber(seasonIndex);
+
+                                                
+
+                                                string text = $"Dear @,^^It is with heavy hearts that we announce the passing of {npc.Id}.^They passed away because of {npc.CauseOfDeath}.^^A memorial service will be held at the Cemetery on {season} {day}, Year {year}.^Please join us to pay your respects.^^   - The Priest";
+
+                                                mail[mailKey] = text;
 
                                             }
 
-        
-
                                         }
 
-        
+                                    }
 
-                                    });
+                                });
 
-        
+                            }
 
-                                }
-
-                }
+                        }
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {

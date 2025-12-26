@@ -10,6 +10,8 @@ namespace Time_Change.Models
         public LifeStage LifeStage { get; set; } = LifeStage.Adult;
         public int Vitality { get; set; } // 0-100
         public bool Alive { get; set; } = true;
+        public int DeathDateTotal { get; set; } = -1; // Total days played when death occurred
+        public string CauseOfDeath { get; set; } = "Unknown";
 
         // Components
         public Health Health { get; set; } = new();

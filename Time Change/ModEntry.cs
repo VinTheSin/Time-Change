@@ -50,9 +50,8 @@ namespace Time_Change
             if (this.Data.NpcStates.TryGetValue(name, out var npcData))
             {
                 npcData.Alive = true;
-                // Reset to Adult or original stage? Defaulting to Adult for safety, or calculating from age.
-                // Re-calculating stage based on age is safer.
-                npcData.LifeStage = LifeStage.Adult; // Placeholder, LifecycleManager handles updates
+                npcData.LifeStage = LifeStage.Adult; 
+                npcData.DeathDateTotal = -1; // Reset death date
                 
                 if (this.Data.PendingFunerals.Contains(name))
                 {
@@ -106,12 +105,11 @@ namespace Time_Change
             {
                 npcData.Alive = false;
                 npcData.LifeStage = LifeStage.Deceased;
+                npcData.DeathDateTotal = Game1.Date.TotalDays;
+                npcData.CauseOfDeath = "killed by mice"; // Specific debug cause
+
                 this.Monitor.Log($"Killed {name}. They should have a funeral pending now.", LogLevel.Alert);
-                
-                if (!this.Data.PendingFunerals.Contains(name))
-                {
-                    this.Data.PendingFunerals.Add(name);
-                }
+                Game1.addHUDMessage(new HUDMessage("Someone seems to have passed away...", HUDMessage.newQuest_type));
 
                 // Hide immediately
                 var npc = Game1.getCharacterFromName(name);
