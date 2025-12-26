@@ -34,7 +34,7 @@ namespace Time_Change
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.GameLoop.DayEnding += OnDayEnding;
 
-            helper.ConsoleCommands.Add("debug_kill", "[Build v6] Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
+            helper.ConsoleCommands.Add("debug_kill", "[Build v8] Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
             helper.ConsoleCommands.Add("debug_revive", "Revives a killed NPC.\n\nUsage: debug_revive <name>", this.OnDebugRevive);
         }
 
@@ -114,6 +114,7 @@ namespace Time_Change
                 // Queue mail immediately for tomorrow
                 string mailKey = $"SeasonsOfTime_Death_{name}";
                 Game1.addMailForTomorrow(mailKey);
+                Game1.addMailForTomorrow("SeasonsOfTime_Test"); // Queue test mail too
 
                 // Hide immediately
                 var npc = Game1.getCharacterFromName(name);
