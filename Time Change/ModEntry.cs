@@ -34,7 +34,63 @@ namespace Time_Change
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.GameLoop.DayEnding += OnDayEnding;
 
-            helper.ConsoleCommands.Add("debug_kill", "[Build v5] Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
+            helper.ConsoleCommands.Add("debug_kill", "[Build v6] Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
+            helper.ConsoleCommands.Add("debug_revive", "Revives a killed NPC.\n\nUsage: debug_revive <name>", this.OnDebugRevive);
+        }
+
+        private void OnDebugRevive(string command, string[] args)
+        {
+            if (args.Length == 0)
+            {
+                this.Monitor.Log("Usage: debug_revive <name>", LogLevel.Error);
+                return;
+            }
+
+            string name = args[0];
+            if (this.Data.NpcStates.TryGetValue(name, out var npcData))
+            {
+                npcData.Alive = true;
+                // Reset to Adult or original stage? Defaulting to Adult for safety, or calculating from age.
+                // Re-calculating stage based on age is safer.
+                npcData.LifeStage = LifeStage.Adult; // Placeholder, LifecycleManager handles updates
+                
+                if (this.Data.PendingFunerals.Contains(name))
+                {
+                    this.Data.PendingFunerals.Remove(name);
+                }
+
+                this.Monitor.Log($"Revived {name}.", LogLevel.Alert);
+
+                // Unhide the NPC
+                // We need to re-add them to a default location (e.g. Town) or their home.
+                // Simplest: Add to Town at default coords.
+                var town = Game1.getLocationFromName("Town");
+                if (town != null)
+                {
+                    // Check if character already exists (hidden)
+                    var existing = Game1.getCharacterFromName(name);
+                    if (existing != null)
+                    {
+                        existing.IsInvisible = false;
+                        existing.HideShadow = false;
+                        if (existing.currentLocation == null)
+                        {
+                            town.addCharacter(existing);
+                            existing.Position = new Microsoft.Xna.Framework.Vector2(20 * 64, 20 * 64); // Arbitrary spot
+                        }
+                    }
+                    else
+                    {
+                        // Reload character? This is hard if completely removed.
+                        // Stardew usually keeps them in the global list or we rely on DayStart to reload them.
+                        this.Monitor.Log("NPC entity might need a day reset to fully reappear.", LogLevel.Warn);
+                    }
+                }
+            }
+            else
+            {
+                this.Monitor.Log($"NPC '{name}' not found in mod data.", LogLevel.Error);
+            }
         }
 
         private void OnDebugKill(string command, string[] args)

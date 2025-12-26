@@ -30,40 +30,91 @@ namespace Time_Change.Managers
             this.Data = data;
         }
 
-        private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
-        {
-            if (this.Data == null || this.Data.PendingFunerals.Count == 0) return;
+                private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
 
-                        // Target the Cemetery events
-                        if (e.Name.IsEquivalentTo($"Data/Events/{MapManager.CemeteryLocationName}"))
+                {
+
+                    if (this.Data == null) return; // Allow checking without pending funerals to at least load the empty event file
+
+        
+
+                    // Target the Cemetery events
+
+                    if (e.Name.IsEquivalentTo($"Data/Events/{MapManager.CemeteryLocationName}"))
+
+                    {
+
+                        e.LoadFrom(() =>
+
                         {
-                            e.Edit(editor =>
+
+                            var events = new System.Collections.Generic.Dictionary<string, string>();
+
+        
+
+                            if (this.Data.PendingFunerals.Count > 0)
+
                             {
-                                var events = editor.AsDictionary<string, string>().Data;
-                                
+
                                 // Grab the first pending funeral
+
                                 string deceasedName = this.Data.PendingFunerals[0];
+
                                 int eventId = GetFuneralEventId(deceasedName);
-            
+
+        
+
                                 // Don't reinject if already seen (double check, though DayEnding handles removal)
-                                if (Game1.player.eventsSeen.Contains(eventId.ToString()))
+
+                                if (!Game1.player.eventsSeen.Contains(eventId.ToString()))
+
                                 {
-                                    return;
+
+                                    this.Monitor.Log($"Injecting funeral event for {deceasedName} (ID: {eventId})", LogLevel.Info);
+
+        
+
+                                    // Basic Event Script
+
+                                    // Preconditions: None (null key prefix?) -> Stardew events usually "ID/Condition"
+
+                                    // If we just use ID, it means "always run if not seen"
+
+                                    
+
+                                    // Script:
+
+                                    // music moonlightJellies
+
+                                    // viewport 10 10
+
+                                    // farmer 10 15 0 (Face Up)
+
+                                    // Lewis 10 12 2 (Face Down)
+
+                                    // speak Lewis "..."
+
+                                    
+
+                                    string script = $"moonlightJellies/10 10/farmer 10 15 0 Lewis 10 12 2/pause 1000/speak Lewis \"We are gathered here today to say goodbye to our friend, {deceasedName}.\"/pause 500/message \"The town stands in silence.\"/pause 1000/end";
+
+        
+
+                                    events[eventId.ToString()] = script;
+
                                 }
-            
-                                this.Monitor.Log($"Injecting funeral event for {deceasedName} (ID: {eventId})", LogLevel.Info);
-            
-                                // Basic Event Script
-                                // Preconditions: None (-1) or generic
-                                // Music: moonlightJellies (sad/slow)
-                                // Viewport: 10 10 (Center of our 20x20 cemetery map)
-                                // Attendees: Lewis at head, others gathered
-                                
-                                string script = $"moonlightJellies/10 10/farmer 10 15 0 Lewis 10 12 2/pause 1000/speak Lewis \"We are gathered here today to say goodbye to our friend, {deceasedName}.\"/pause 500/message \"The town stands in silence.\"/pause 1000/end";
-            
-                                events[eventId.ToString()] = script;
-                            });
-                        }        }
+
+                            }
+
+                            
+
+                            return events;
+
+                        }, AssetLoadPriority.Medium);
+
+                    }
+
+                }
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {
