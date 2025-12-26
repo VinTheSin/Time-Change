@@ -209,59 +209,11 @@ namespace Time_Change.Managers
 
                 
 
-                                                    // Inject Mail Data
+                                                                // Inject Mail Data
 
                 
 
-                                                    if (e.Name.IsEquivalentTo("Data/mail"))
-
-                
-
-                                                    {
-
-                
-
-                                                        e.Edit(editor =>
-
-                
-
-                                                        {
-
-                
-
-                                                            var mail = editor.AsDictionary<string, string>().Data;
-
-                
-
-                                                            
-
-                
-
-                                                            // Debug injection
-
-                
-
-                                                            mail["SeasonsOfTime_Test"] = "This is a test letter from the mod.^^If you see this, injection works.";
-
-                
-
-                                        
-
-                
-
-                                                            foreach (var kvp in this.Data.NpcStates)
-
-                
-
-                                                            {
-
-                
-
-                                                                var npc = kvp.Value;
-
-                
-
-                                                                if (!npc.Alive && npc.LifeStage == LifeStage.Deceased && npc.DeathDateTotal >= 0)
+                                                                if (e.Name.IsEquivalentTo("Data/mail"))
 
                 
 
@@ -269,79 +221,135 @@ namespace Time_Change.Managers
 
                 
 
-                                                                    string mailKey = $"SeasonsOfTime_Death_{npc.Id}";
+                                                                    this.Monitor.Log("Game requested Data/mail - Attempting injection...", LogLevel.Trace);
 
                 
 
-                                                                    
+                                                                    e.Edit(editor =>
 
                 
 
-                                                                    // Always inject/overwrite to ensure it exists
+                                                                    {
 
                 
 
-                                                                    // Calculate Funeral Date
+                                                                        var mail = editor.AsDictionary<string, string>().Data;
 
                 
 
-                                                                    int funeralTotal = npc.DeathDateTotal + 7;
+                                                                        
 
                 
 
-                                                                    // Basic calculation for Y1
+                                                                        // Debug injection
 
                 
 
-                                                                    int year = 1 + (funeralTotal / (28 * 4));
+                                                                        mail["SeasonsOfTime_Test"] = "This is a test letter from the mod.^^If you see this, injection works.";
 
                 
 
-                                                                    int seasonIndex = (funeralTotal % (28 * 4)) / 28;
+                                                    
 
                 
 
-                                                                    int day = 1 + (funeralTotal % 28);
+                                                                        foreach (var kvp in this.Data.NpcStates)
 
                 
 
-                                                                    string season = Utility.getSeasonNameFromNumber(seasonIndex);
+                                                                        {
 
                 
 
-                                                                    
+                                                                            var npc = kvp.Value;
 
                 
 
-                                                                    string text = $"Dear @,^^It is with heavy hearts that we announce the passing of {npc.Id}.^They passed away because of {npc.CauseOfDeath}.^^A memorial service will be held at the Cemetery on {season} {day}, Year {year}.^Please join us to pay your respects.^^   - The Priest";
+                                                                            // Inject mail for ANY dead NPC, just in case
 
                 
 
-                                                                    
+                                                                            if (!npc.Alive && npc.LifeStage == LifeStage.Deceased)
 
                 
 
-                                                                    mail[mailKey] = text;
+                                                                            {
 
                 
 
-                                                                    this.Monitor.Log($"[Mail Injection] Key: {mailKey} | Target: {npc.Id}", LogLevel.Alert);
+                                                                                string mailKey = $"SeasonsOfTime_Death_{npc.Id}";
+
+                
+
+                                                                                
+
+                
+
+                                                                                // Calculate Funeral Date (default to Day 7 if missing date)
+
+                
+
+                                                                                int deathDate = npc.DeathDateTotal >= 0 ? npc.DeathDateTotal : 1;
+
+                
+
+                                                                                int funeralTotal = deathDate + 7;
+
+                
+
+                                                                                
+
+                
+
+                                                                                int year = 1 + (funeralTotal / (28 * 4));
+
+                
+
+                                                                                int seasonIndex = (funeralTotal % (28 * 4)) / 28;
+
+                
+
+                                                                                int day = 1 + (funeralTotal % 28);
+
+                
+
+                                                                                string season = Utility.getSeasonNameFromNumber(seasonIndex);
+
+                
+
+                                                                                
+
+                
+
+                                                                                string text = $"Dear @,^^It is with heavy hearts that we announce the passing of {npc.Id}.^They passed away because of {npc.CauseOfDeath}.^^A memorial service will be held at the Cemetery on {season} {day}, Year {year}.^Please join us to pay your respects.^^   - The Priest";
+
+                
+
+                                                                                
+
+                
+
+                                                                                mail[mailKey] = text;
+
+                
+
+                                                                                this.Monitor.Log($"[Mail Injection] Key: {mailKey} | Target: {npc.Id}", LogLevel.Trace);
+
+                
+
+                                                                            }
+
+                
+
+                                                                        }
+
+                
+
+                                                                    });
 
                 
 
                                                                 }
-
-                
-
-                                                            }
-
-                
-
-                                                        });
-
-                
-
-                                                    }
 
                 
 

@@ -34,8 +34,32 @@ namespace Time_Change
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.GameLoop.DayEnding += OnDayEnding;
 
-            helper.ConsoleCommands.Add("debug_kill", "[Build v8] Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
+            helper.ConsoleCommands.Add("debug_kill", "[Build v9] Instantly kills an NPC for testing.\n\nUsage: debug_kill <name>", this.OnDebugKill);
             helper.ConsoleCommands.Add("debug_revive", "Revives a killed NPC.\n\nUsage: debug_revive <name>", this.OnDebugRevive);
+            helper.ConsoleCommands.Add("debug_check_mail", "Checks if a mail key exists in Data/mail.\n\nUsage: debug_check_mail <key>", this.OnDebugCheckMail);
+        }
+
+        private void OnDebugCheckMail(string command, string[] args)
+        {
+            if (args.Length == 0)
+            {
+                this.Monitor.Log("Usage: debug_check_mail <key>", LogLevel.Error);
+                return;
+            }
+
+            string key = args[0];
+            var mailData = this.Helper.GameContent.Load<System.Collections.Generic.Dictionary<string, string>>("Data/mail");
+            
+            if (mailData.TryGetValue(key, out string? content))
+            {
+                this.Monitor.Log($"[SUCCESS] Mail '{key}' found:\n{content}", LogLevel.Info);
+            }
+            else
+            {
+                this.Monitor.Log($"[FAILURE] Mail '{key}' NOT found in Data/mail.", LogLevel.Error);
+                // List some keys to see if it's loaded at all
+                this.Monitor.Log($"Total keys in Data/mail: {mailData.Count}", LogLevel.Info);
+            }
         }
 
         private void OnDebugRevive(string command, string[] args)
