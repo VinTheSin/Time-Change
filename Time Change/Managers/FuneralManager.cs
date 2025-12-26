@@ -33,11 +33,17 @@ namespace Time_Change.Managers
 
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
         {
-            // Invalidate caches
+            // Invalidate the event cache
             this.Helper.GameContent.InvalidateCache($"Data/Events/{MapManager.CemeteryLocationName}");
             this.Helper.GameContent.InvalidateCache("Data/mail");
+            
+            // Force load to trigger injection logging check
+            // We just ask for it, which triggers OnAssetRequested if invalidated
+            // This ensures our logs appear if it works.
+            this.Helper.GameContent.Load<System.Collections.Generic.Dictionary<string, string>>("Data/mail");
 
-            if (this.Data == null) return;
+            // Ensure mail is sent for all pending funerals
+            if (this.Data != null)
 
             foreach (var kvp in this.Data.NpcStates)
             {

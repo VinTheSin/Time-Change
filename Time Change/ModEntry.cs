@@ -139,6 +139,9 @@ namespace Time_Change
                 string mailKey = $"SeasonsOfTime_Death_{name}";
                 Game1.addMailForTomorrow(mailKey);
                 Game1.addMailForTomorrow("SeasonsOfTime_Test"); // Queue test mail too
+                
+                // Force invalidation so next time it's accessed (e.g. next morning), it rebuilds
+                this.Helper.GameContent.InvalidateCache("Data/mail");
 
                 // Hide immediately
                 var npc = Game1.getCharacterFromName(name);
